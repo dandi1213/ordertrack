@@ -68,12 +68,19 @@ export async function createOrderAction(
     const customerName = text(formData, 'customerName');
     const phone = normalizePhone(text(formData, 'customerPhone'));
 
-    const { data: existingCustomer } = await admin
+    // Dedup pelanggan berdasarkan nomor + nama yang sama persis (abaikan huruf besar/kecil).
+    // Kalau nomor sama tetapi nama beda, tetap dibuat data pelanggan baru agar nama yang
+    // diketik di form tidak ditimpa oleh pelanggan lama dengan nomor yang sama.
+    const { data: customersWithSamePhone } = await admin
       .from('customers')
       .select('id, name')
       .eq('business_id', user.businessId)
-      .eq('phone', phone)
-      .maybeSingle();
+      .eq('phone', phone);
+
+    const existingCustomer = customersWithSamePhone?.find(
+      (candidate) =>
+        String(candidate.name ?? '').trim().toLowerCase() === customerName.trim().toLowerCase()
+    );
 
     let customerId = existingCustomer?.id;
     if (!customerId) {
