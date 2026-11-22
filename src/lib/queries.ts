@@ -27,7 +27,7 @@ function mapOrder(row: Row): Order {
     payment_date: str(p.payment_date),
     notes: str(p.notes),
     recorded_by_name: str((p.recorder as Row | undefined)?.full_name, 'Staf / Owner'),
-  }));
+  })).sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime());
 
   const status_history: OrderStatusHistoryItem[] = rows(row.status_history).map((h) => ({
     id: str(h.id),
@@ -37,7 +37,7 @@ function mapOrder(row: Row): Order {
     changed_by_name: str((h.editor as Row | undefined)?.full_name, 'Sistem'),
     notes: str(h.notes),
     created_at: str(h.created_at),
-  }));
+  })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const customer = row.customer as Row | undefined;
 

@@ -13,17 +13,19 @@ import {
   EyeOff,
   AlertTriangle,
   X,
+  User,
 } from 'lucide-react';
 import {
   changeEmailAction,
   changePasswordAction,
   deleteAccountAction,
+  updateProfileNameAction,
   type AuthState,
 } from '@/app/actions/auth';
 import { updateBusinessSettingsAction } from '@/app/actions/settings';
 import { ActionResult, BusinessSettings, SessionUser } from '@/types';
 
-type DialogType = 'email' | 'password' | 'delete' | null;
+type DialogType = 'name' | 'email' | 'password' | 'delete' | null;
 const initialAuthState: AuthState = {};
 const initialSettingsState: ActionResult = { ok: false, error: '' };
 
@@ -42,6 +44,10 @@ export default function SettingsView({
     ActionResult,
     FormData
   >(updateBusinessSettingsAction, initialSettingsState);
+  const [nameState, nameAction, namePending] = useActionState<AuthState, FormData>(
+    updateProfileNameAction,
+    initialAuthState
+  );
   const [emailState, emailAction, emailPending] = useActionState<AuthState, FormData>(
     changeEmailAction,
     initialAuthState
@@ -239,6 +245,18 @@ export default function SettingsView({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <button
                 type="button"
+                onClick={() => setDialog('name')}
+                className="p-5 border border-[#E2E8F0] rounded-xl hover:border-[#2563EB] hover:bg-blue-50 transition-colors text-left"
+              >
+                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mb-3">
+                  <User className="w-5 h-5" />
+                </div>
+                <h4 className="font-semibold text-[#0F172A]">Ubah Nama</h4>
+                <p className="text-xs text-slate-500 mt-1">Nama yang tampil di aplikasi</p>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setDialog('email')}
                 className="p-5 border border-[#E2E8F0] rounded-xl hover:border-[#2563EB] hover:bg-blue-50 transition-colors text-left"
               >
@@ -273,6 +291,76 @@ export default function SettingsView({
                 <p className="text-xs text-red-500 mt-1">Tindakan tidak dapat dibatalkan</p>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {dialog === 'name' && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="p-6 border-b border-[#E2E8F0] flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[#0F172A]">Ubah Nama Lengkap</h3>
+                  <p className="text-xs text-[#64748B]">Nama yang tampil di aplikasi</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={resetDialogs}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+                aria-label="Tutup"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form action={nameAction} className="p-6 space-y-4">
+              <div>
+                <label htmlFor="settings-name" className="block text-sm font-medium text-[#0F172A] mb-1">
+                  Nama Lengkap
+                </label>
+                <input
+                  id="settings-name"
+                  name="fullName"
+                  type="text"
+                  required
+                  defaultValue={user.fullName}
+                  className={inputClass()}
+                />
+              </div>
+              {nameState.error && (
+                <p className="flex items-start gap-1.5 text-xs text-red-600">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  {nameState.error}
+                </p>
+              )}
+              {nameState.success && (
+                <p className="flex items-center gap-1.5 text-xs text-green-600">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {nameState.success}
+                </p>
+              )}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-[#E2E8F0]">
+                <button
+                  type="button"
+                  onClick={resetDialogs}
+                  className="px-4 py-2 border border-[#CBD5E1] text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={namePending}
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-[#2563EB] text-white rounded-xl text-sm font-semibold hover:bg-[#1D4ED8] disabled:opacity-60"
+                >
+                  {namePending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Simpan Nama</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

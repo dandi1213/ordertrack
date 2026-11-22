@@ -68,20 +68,22 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
             </Link>
           );
         })}
-        <Link
-          href="/account"
-          onClick={onNavigate}
-          className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-            pathname === '/account'
-              ? 'bg-[#1E40AF] text-white shadow-sm shadow-blue-900/50'
-              : 'text-[#CBD5E1] hover:bg-slate-800/60 hover:text-white'
-          }`}
-        >
-          <UserCircle
-            className={`w-5 h-5 ${pathname === '/account' ? 'text-white' : 'text-slate-400'}`}
-          />
-          <span>Akun Saya</span>
-        </Link>
+        {user.role !== 'owner' && (
+          <Link
+            href="/account"
+            onClick={onNavigate}
+            className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+              pathname === '/account'
+                ? 'bg-[#1E40AF] text-white shadow-sm shadow-blue-900/50'
+                : 'text-[#CBD5E1] hover:bg-slate-800/60 hover:text-white'
+            }`}
+          >
+            <UserCircle
+              className={`w-5 h-5 ${pathname === '/account' ? 'text-white' : 'text-slate-400'}`}
+            />
+            <span>Akun Saya</span>
+          </Link>
+        )}
       </nav>
 
       <div className="p-4 border-t border-slate-800 bg-slate-900/50">

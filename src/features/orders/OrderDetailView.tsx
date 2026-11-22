@@ -23,6 +23,7 @@ import Select from '@/components/Select';
 import {
   prepareWhatsAppAction,
   updateOrderDeadlineAction,
+  updateOrderInfoAction,
   updateOrderStatusAction,
 } from '@/app/actions/orders';
 import { recordPaymentAction } from '@/app/actions/payments';
@@ -67,6 +68,9 @@ export default function OrderDetailView({
 
   const [showDeadlineModal, setShowDeadlineModal] = useState(false);
   const [deadlineValue, setDeadlineValue] = useState(order.deadline);
+
+  const [editingSection, setEditingSection] = useState<'product' | 'customer' | null>(null);
+  const [editError, setEditError] = useState('');
 
   const [toast, setToast] = useState<{ ok: boolean; message: string } | null>(null);
 
@@ -158,6 +162,23 @@ export default function OrderDetailView({
     });
   };
 
+  const handleEditInfo = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setEditError('');
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      const result = await updateOrderInfoAction(formData);
+      if (!result.ok) {
+        setEditError(result.error);
+        notify(false, result.error);
+        return;
+      }
+      setEditingSection(null);
+      notify(true, 'Informasi pesanan berhasil diperbarui.');
+      router.refresh();
+    });
+  };
+
   const handleWhatsApp = (template: OrderStatus) => {
     if (!canViewOrders) return;
     startTransition(async () => {
@@ -236,9 +257,25 @@ export default function OrderDetailView({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-sm space-y-6">
-            <h3 className="text-lg font-bold text-[#0F172A] border-b border-[#E2E8F0] pb-4">
-              Informasi Produk &amp; Spesifikasi
-            </h3>
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+              <h3 className="text-lg font-bold text-[#0F172A]">
+                Informasi Produk &amp; Spesifikasi
+              </h3>
+              {canEditOrder && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditError('');
+                    setEditingSection('product');
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline"
+                  title="Ubah informasi produk"
+                >
+                  <Pencil className="w-3 h-3" />
+                  Ubah
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="text-xs font-semibold text-[#64748B] uppercase tracking-wider">Nama Produk</label>
@@ -364,7 +401,23 @@ export default function OrderDetailView({
           </div>
 
           <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-sm space-y-6">
-            <h3 className="text-lg font-bold text-[#0F172A] border-b border-[#E2E8F0] pb-4">Informasi Pelanggan</h3>
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+              <h3 className="text-lg font-bold text-[#0F172A]">Informasi Pelanggan</h3>
+              {canEditOrder && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditError('');
+                    setEditingSection('customer');
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline"
+                  title="Ubah informasi pelanggan"
+                >
+                  <Pencil className="w-3 h-3" />
+                  Ubah
+                </button>
+              )}
+            </div>
             <div className="space-y-4 text-sm">
               <div className="flex items-start space-x-3">
                 <User className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
@@ -617,6 +670,135 @@ export default function OrderDetailView({
                   className="px-4 py-2 bg-[#2563EB] text-white rounded-xl text-sm font-semibold hover:bg-[#1D4ED8] disabled:opacity-60"
                 >
                   Perbarui Status
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingSection && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-[#0F172A]">
+              {editingSection === 'product'
+                ? 'Ubah Informasi Produk'
+                : 'Ubah Informasi Pelanggan'}
+            </h3>
+            <form onSubmit={handleEditInfo} className="space-y-4">
+              <input type="hidden" name="orderId" value={order.id} />
+              <input type="hidden" name="scope" value={editingSection} />
+
+              {editingSection === 'product' ? (
+                <>
+                  <div>
+                    <label htmlFor="edit-product-name" className="block text-xs font-medium text-[#0F172A] mb-1">
+                      Nama Produk
+                    </label>
+                    <input
+                      id="edit-product-name"
+                      name="productName"
+                      type="text"
+                      required
+                      defaultValue={order.product_name}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="edit-quantity" className="block text-xs font-medium text-[#0F172A] mb-1">
+                      Jumlah (pcs)
+                    </label>
+                    <input
+                      id="edit-quantity"
+                      name="quantity"
+                      type="number"
+                      min={1}
+                      step={1}
+                      required
+                      defaultValue={order.quantity}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="edit-specifications" className="block text-xs font-medium text-[#0F172A] mb-1">
+                      Spesifikasi Detail
+                    </label>
+                    <textarea
+                      id="edit-specifications"
+                      name="specifications"
+                      rows={3}
+                      defaultValue={order.specifications}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="edit-notes" className="block text-xs font-medium text-[#0F172A] mb-1">
+                      Catatan Internal (Opsional)
+                    </label>
+                    <textarea
+                      id="edit-notes"
+                      name="notes"
+                      rows={2}
+                      defaultValue={order.notes ?? ''}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label htmlFor="edit-customer-name" className="block text-xs font-medium text-[#0F172A] mb-1">
+                      Nama Pelanggan
+                    </label>
+                    <input
+                      id="edit-customer-name"
+                      name="customerName"
+                      type="text"
+                      required
+                      defaultValue={order.customer_name}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="edit-customer-phone" className="block text-xs font-medium text-[#0F172A] mb-1">
+                      No. WhatsApp
+                    </label>
+                    <input
+                      id="edit-customer-phone"
+                      name="customerPhone"
+                      type="text"
+                      required
+                      defaultValue={order.customer_phone}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
+                    />
+                  </div>
+                </>
+              )}
+
+              {editError && (
+                <p
+                  role="alert"
+                  className="flex items-start gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  {editError}
+                </p>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-[#E2E8F0]">
+                <button
+                  type="button"
+                  onClick={() => setEditingSection(null)}
+                  className="px-4 py-2 border border-[#CBD5E1] text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="px-4 py-2 bg-[#2563EB] text-white rounded-xl text-sm font-semibold hover:bg-[#1D4ED8] disabled:opacity-60"
+                >
+                  Simpan Perubahan
                 </button>
               </div>
             </form>

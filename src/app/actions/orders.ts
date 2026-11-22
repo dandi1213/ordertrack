@@ -6,7 +6,13 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { can, getSessionUser } from '@/lib/auth';
 import { deriveTrackingToken, hashTrackingToken } from '@/lib/trackingToken';
-import { normalizePhone, numberValue, text, validateOrder } from '@/lib/validation';
+import {
+  isValidIndonesianPhone,
+  normalizePhone,
+  numberValue,
+  text,
+  validateOrder,
+} from '@/lib/validation';
 import { WHATSAPP_TEMPLATES } from '@/lib/constants';
 import { formatIDR } from '@/lib/utils';
 import { ActionResult, OrderStatus } from '@/types';
@@ -262,6 +268,84 @@ export async function updateOrderDeadlineAction(
     return { ok: true, data: undefined };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Gagal memperbarui deadline.' };
+  }
+}
+
+export async function updateOrderInfoAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const user = await getSessionUser();
+    if (!user) return { ok: false, error: 'Sesi berakhir. Silakan masuk kembali.' };
+    if (!can(user, 'edit_orders')) {
+      return { ok: false, error: 'Anda tidak memiliki izin mengubah pesanan.' };
+    }
+
+    const orderId = text(formData, 'orderId');
+    const scope = text(formData, 'scope');
+    if (!orderId) return { ok: false, error: 'ID pesanan tidak ditemukan.' };
+
+    const admin = createAdminClient();
+    const { data: order } = await admin
+      .from('orders')
+      .select('id, customer_id')
+      .eq('id', orderId)
+      .eq('business_id', user.businessId)
+      .maybeSingle();
+
+    if (!order) return { ok: false, error: 'Pesanan tidak ditemukan.' };
+
+    const updatedAt = new Date().toISOString();
+
+    if (scope === 'product') {
+      const productName = text(formData, 'productName');
+      const quantity = numberValue(formData, 'quantity');
+      const specifications = text(formData, 'specifications');
+      const notes = text(formData, 'notes');
+
+      if (productName.length < 2) {
+        return { ok: false, error: 'Nama produk minimal 2 karakter.' };
+      }
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        return { ok: false, error: 'Jumlah harus berupa bilangan bulat lebih dari 0.' };
+      }
+
+      const { error } = await admin
+        .from('orders')
+        .update({
+          product_name: productName,
+          quantity,
+          specifications,
+          notes,
+          updated_at: updatedAt,
+        })
+        .eq('id', orderId)
+        .eq('business_id', user.businessId);
+      if (error) return { ok: false, error: error.message };
+    } else if (scope === 'customer') {
+      const name = text(formData, 'customerName');
+      const phoneRaw = text(formData, 'customerPhone');
+
+      if (name.length < 2) return { ok: false, error: 'Nama pelanggan minimal 2 karakter.' };
+      if (!isValidIndonesianPhone(phoneRaw)) {
+        return { ok: false, error: 'Nomor WhatsApp tidak valid.' };
+      }
+
+      const { error } = await admin
+        .from('customers')
+        .update({ name, phone: normalizePhone(phoneRaw) })
+        .eq('id', order.customer_id)
+        .eq('business_id', user.businessId);
+      if (error) return { ok: false, error: error.message };
+    } else {
+      return { ok: false, error: 'Jenis perubahan tidak valid.' };
+    }
+
+    revalidateOrderPaths(orderId);
+    return { ok: true, data: undefined };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Gagal memperbarui informasi pesanan.',
+    };
   }
 }
 

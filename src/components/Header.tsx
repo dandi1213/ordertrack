@@ -81,13 +81,15 @@ export default function Header({ onMenuClick, user }: HeaderProps) {
                   <p className="text-sm font-semibold text-[#0F172A]">{user.fullName}</p>
                   <p className="text-xs text-slate-400 break-all">{user.email}</p>
                 </div>
-                <Link
-                  href="/account"
-                  onClick={() => setShowProfileMenu(false)}
-                  className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  Akun Saya
-                </Link>
+                {user.role !== 'owner' && (
+                  <Link
+                    href="/account"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    Akun Saya
+                  </Link>
+                )}
                 {canManageSettings && (
                   <Link
                     href="/settings"
