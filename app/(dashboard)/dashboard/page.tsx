@@ -1,37 +1,24 @@
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import {
-  ShoppingBag,
-  CheckCircle2,
-  CreditCard,
-  Plus,
-  AlertTriangle,
-  ChevronRight,
-} from 'lucide-react';
-import RecentOrdersTable from '@/features/dashboard/RecentOrdersTable';
-import { can, getSessionUser } from '@/lib/auth';
-import { getOrders, getSettings } from '@/lib/queries';
-import { formatIDR, isOverdue } from '@/lib/utils';
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ShoppingBag, CheckCircle2, CreditCard, Plus, AlertTriangle, ChevronRight } from "lucide-react";
+import RecentOrdersTable from "@/features/dashboard/RecentOrdersTable";
+import { can, getSessionUser } from "@/lib/auth";
+import { getOrders, getSettings } from "@/lib/queries";
+import { formatIDR, isOverdue } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const user = await getSessionUser();
-  if (!user) redirect('/login');
-  if (!can(user, 'view_dashboard')) redirect('/orders');
+  if (!user) redirect("/login");
+  if (!can(user, "view_dashboard")) redirect("/orders");
 
-  const [orders, settings] = await Promise.all([
-    getOrders(user.businessId),
-    getSettings(user.businessId),
-  ]);
+  const [orders, settings] = await Promise.all([getOrders(user.businessId), getSettings(user.businessId)]);
 
   const today = new Date();
-  const activeOrders = orders.filter((o) => o.status !== 'completed');
+  const activeOrders = orders.filter((o) => o.status !== "completed");
   const overdueOrders = orders.filter((o) => isOverdue(o.deadline, o.status, today));
-  const readyOrders = orders.filter((o) => o.status === 'ready');
+  const readyOrders = orders.filter((o) => o.status === "ready");
 
-  const totalPaidAll = orders.reduce(
-    (sum, o) => sum + (o.payments || []).reduce((pSum, p) => pSum + p.amount, 0),
-    0
-  );
+  const totalPaidAll = orders.reduce((sum, o) => sum + (o.payments || []).reduce((pSum, p) => pSum + p.amount, 0), 0);
   const totalRevenue = orders.reduce((sum, o) => sum + o.total_price, 0);
 
   return (
@@ -40,13 +27,10 @@ export default async function DashboardPage() {
         <div>
           <h2 className="text-2xl lg:text-3xl font-bold">Selamat Datang, {user.fullName}</h2>
           <p className="text-slate-400 text-sm mt-2">
-            Ringkasan operasional <span className="text-white font-semibold">{settings.name}</span> — data langsung dari database.
+            Ringkasan operasional <span className="text-white font-semibold">{settings.name}</span> — informasi operasional terbaru.
           </p>
         </div>
-        <Link
-          href="/orders/create"
-          className="inline-flex items-center space-x-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 py-3 rounded-xl font-semibold text-sm shadow-md shadow-blue-600/20 transition-all shrink-0"
-        >
+        <Link href="/orders/create" className="inline-flex items-center space-x-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 py-3 rounded-xl font-semibold text-sm shadow-md shadow-blue-600/20 transition-all shrink-0">
           <Plus className="w-5 h-5" />
           <span>Buat Pesanan Baru</span>
         </Link>
@@ -104,10 +88,7 @@ export default async function DashboardPage() {
             <h3 className="text-lg font-bold text-[#0F172A]">Pesanan Terbaru</h3>
             <p className="text-xs text-[#64748B] mt-0.5">5 pesanan terakhir pada bisnis Anda</p>
           </div>
-          <Link
-            href="/orders"
-            className="inline-flex items-center space-x-1 text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
-          >
+          <Link href="/orders" className="inline-flex items-center space-x-1 text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
             <span>Lihat Semua</span>
             <ChevronRight className="w-4 h-4" />
           </Link>
