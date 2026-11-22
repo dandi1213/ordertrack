@@ -1,5 +1,6 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { getSessionUser } from '@/lib/auth';
 import { getOrders, getOrderById, getStaff, getSettings, getPublicOrder } from '@/lib/queries';
 import { SessionUser, PublicOrderInfo, ActionResult, Order, StaffMember, BusinessSettings } from '@/types';
@@ -7,7 +8,9 @@ import { SessionUser, PublicOrderInfo, ActionResult, Order, StaffMember, Busines
 type RateEntry = { count: number; resetAt: number };
 const trackingRateLimit = new Map<string, RateEntry>();
 const RATE_LIMIT_WINDOW = 60_000;
-const RATE_LIMIT_MAX = 20;
+// Auto-refresh halaman tracking memanggil ulang server component tiap ~15 detik,
+// jadi beri ruang lebih banyak. Pembatasan tetap per pengunjung (IP + token).
+const RATE_LIMIT_MAX = 60;
 
 export async function loadDashboard(): Promise<
   ActionResult<{ orders: Order[]; settings: BusinessSettings; user: SessionUser }>
@@ -72,7 +75,12 @@ export async function loadSettings(): Promise<
 }
 
 export async function loadTracking(token: string): Promise<ActionResult<PublicOrderInfo | null>> {
-  const key = token || 'empty';
+  const headerList = await headers();
+  const ip =
+    headerList.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    headerList.get('x-real-ip') ??
+    'unknown';
+  const key = `${ip}:${token || 'empty'}`;
   const now = Date.now();
   const entry = trackingRateLimit.get(key);
   if (entry && now < entry.resetAt) {

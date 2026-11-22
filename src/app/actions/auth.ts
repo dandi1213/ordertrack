@@ -99,6 +99,12 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
     if (message.includes('already') || message.includes('registered')) {
       return { error: 'Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.' };
     }
+    if (message.includes('rate limit')) {
+      return {
+        error:
+          'Kuota email bawaan Supabase habis (maks. 2 email/jam). Tunggu sekitar 1 jam atau pasang SMTP custom, lalu daftar lagi.',
+      };
+    }
     return { error: signUpError.message };
   }
 

@@ -53,6 +53,13 @@ export async function inviteStaffAction(formData: FormData): Promise<InviteResul
       if (message.includes('already') || message.includes('registered')) {
         return { ok: false, error: 'Email ini sudah terdaftar pada sistem.' };
       }
+      if (message.includes('rate limit')) {
+        return {
+          ok: false,
+          error:
+            'Kuota email bawaan Supabase habis (maks. 2 email/jam). Tunggu sekitar 1 jam atau pasang SMTP custom, lalu coba lagi.',
+        };
+      }
       return { ok: false, error: inviteError?.message ?? 'Gagal mengirim undangan staf.' };
     }
 
@@ -123,7 +130,17 @@ export async function resendStaffInviteAction(formData: FormData): Promise<Actio
       redirectTo: `${origin}/auth/callback`,
       data: { full_name: profile?.full_name ?? '', must_set_password: true },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      const message = error.message.toLowerCase();
+      if (message.includes('rate limit')) {
+        return {
+          ok: false,
+          error:
+            'Kuota email bawaan Supabase habis (maks. 2 email/jam). Tunggu sekitar 1 jam atau pasang SMTP custom, lalu coba lagi.',
+        };
+      }
+      return { ok: false, error: error.message };
+    }
 
     revalidatePath('/team');
     return { ok: true, data: undefined };

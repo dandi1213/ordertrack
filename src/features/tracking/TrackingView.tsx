@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { getStatusLabel, getStatusBadgeClass } from '@/lib/utils';
 import { ORDER_STATUSES } from '@/lib/constants';
+import TrackingAutoRefresh from './TrackingAutoRefresh';
 import { PublicOrderInfo } from '@/types';
 
 function NotFound() {
@@ -144,9 +145,12 @@ export default function TrackingView({ info }: { info: PublicOrderInfo }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 text-center text-xs text-[#64748B] space-y-2">
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 text-center text-xs text-[#64748B] space-y-3">
           <p className="font-semibold text-[#0F172A]">{info.business_name}</p>
-          <p className="pt-2 border-t border-[#E2E8F0]">Powered by OrderTrack SaaS</p>
+          <div className="border-t border-[#E2E8F0] pt-3">
+            <TrackingAutoRefresh />
+          </div>
+          <p className="border-t border-[#E2E8F0] pt-3">Powered by OrderTrack SaaS</p>
         </div>
       </div>
     </div>
