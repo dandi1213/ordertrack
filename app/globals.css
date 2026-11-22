@@ -1,26 +1,34 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-brand-bg: #F8FAFC;
+  --color-brand-surface: #FFFFFF;
+  --color-brand-primary: #2563EB;
+  --color-brand-primary-hover: #1D4ED8;
+  --color-brand-primary-soft: #EFF6FF;
+  --color-brand-text-primary: #0F172A;
+  --color-brand-text-secondary: #64748B;
+  --color-brand-border: #E2E8F0;
+  --color-brand-sidebar: #0F172A;
+  --color-brand-sidebar-text: #CBD5E1;
+  --color-brand-sidebar-active: #1E40AF;
+  
+  --color-status-received: #2563EB;
+  --color-status-received-soft: #EFF6FF;
+  --color-status-inprogress: #D97706;
+  --color-status-inprogress-soft: #FEF3C7;
+  --color-status-ready: #16A34A;
+  --color-status-ready-soft: #DCFCE7;
+  --color-status-completed: #64748B;
+  --color-status-completed-soft: #F1F5F9;
+  --color-status-overdue: #DC2626;
+  --color-status-overdue-soft: #FEE2E2;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-text-primary);
+  font-family: var(--font-sans);
 }
