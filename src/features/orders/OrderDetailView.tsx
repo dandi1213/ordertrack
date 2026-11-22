@@ -22,7 +22,6 @@ import CurrencyInput from '@/components/CurrencyInput';
 import Select from '@/components/Select';
 import {
   prepareWhatsAppAction,
-  updateOrderDeadlineAction,
   updateOrderInfoAction,
   updateOrderStatusAction,
 } from '@/app/actions/orders';
@@ -37,6 +36,8 @@ const STATUS_HINTS: Record<OrderStatus, string> = {
   ready: 'Siap diambil / dikirim',
   completed: 'Selesai dan tercatat',
 };
+
+const HISTORY_PREVIEW = 5;
 
 interface OrderDetailViewProps {
   order: Order;
@@ -66,17 +67,22 @@ export default function OrderDetailView({
   const [newStatus, setNewStatus] = useState<OrderStatus>(order.status);
   const [statusNotes, setStatusNotes] = useState('');
 
-  const [showDeadlineModal, setShowDeadlineModal] = useState(false);
-  const [deadlineValue, setDeadlineValue] = useState(order.deadline);
-
   const [editingSection, setEditingSection] = useState<'product' | 'customer' | null>(null);
   const [editError, setEditError] = useState('');
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [showAllPayments, setShowAllPayments] = useState(false);
 
   const [toast, setToast] = useState<{ ok: boolean; message: string } | null>(null);
 
   const totalPaid = order.payments.reduce((sum, p) => sum + p.amount, 0);
   const remainingBalance = Math.max(order.total_price - totalPaid, 0);
   const isPaidFull = remainingBalance <= 0;
+  const visiblePayments = showAllPayments
+    ? order.payments
+    : order.payments.slice(0, HISTORY_PREVIEW);
+  const visibleHistory = showAllHistory
+    ? order.status_history
+    : order.status_history.slice(0, HISTORY_PREVIEW);
   const trackingPath = `/track/${order.tracking_token}`;
   const trackingUrl =
     typeof window === 'undefined' ? trackingPath : `${window.location.origin}${trackingPath}`;
@@ -142,22 +148,6 @@ export default function OrderDetailView({
       setShowStatusModal(false);
       setStatusNotes('');
       notify(true, 'Status pesanan diperbarui dan riwayat dicatat.');
-      router.refresh();
-    });
-  };
-
-  const handleUpdateDeadline = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    formData.set('orderId', order.id);
-    startTransition(async () => {
-      const result = await updateOrderDeadlineAction(formData);
-      if (!result.ok) {
-        notify(false, result.error);
-        return;
-      }
-      setShowDeadlineModal(false);
-      notify(true, 'Deadline pesanan berhasil diperbarui.');
       router.refresh();
     });
   };
@@ -308,30 +298,43 @@ export default function OrderDetailView({
                 <h3 className="text-lg font-bold text-[#0F172A]">Riwayat Pembayaran</h3>
                 <p className="text-xs text-[#64748B] mt-0.5">Catatan DP, cicilan, dan pelunasan</p>
               </div>
-              {canRecordPayment &&
-                (isPaidFull ? (
-                  <span className="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-semibold text-green-700 bg-green-50 border border-green-200">
-                    Lunas — tidak bisa tambah pembayaran
-                  </span>
-                ) : (
+              <div className="flex items-center space-x-3">
+                {order.payments.length > HISTORY_PREVIEW && (
                   <button
-                    onClick={() => {
-                      setPaymentError('');
-                      setShowPaymentModal(true);
-                    }}
-                    className="inline-flex items-center space-x-1.5 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] px-3.5 py-2 rounded-xl transition-colors"
+                    type="button"
+                    onClick={() => setShowAllPayments((value) => !value)}
+                    className="text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>Tambah Pembayaran</span>
+                    {showAllPayments
+                      ? 'Lebih sedikit'
+                      : `Lihat semua (${order.payments.length})`}
                   </button>
-                ))}
+                )}
+                {canRecordPayment &&
+                  (isPaidFull ? (
+                    <span className="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-semibold text-green-700 bg-green-50 border border-green-200">
+                      Lunas — tidak bisa tambah pembayaran
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setPaymentError('');
+                        setShowPaymentModal(true);
+                      }}
+                      className="inline-flex items-center space-x-1.5 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] px-3.5 py-2 rounded-xl transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Tambah Pembayaran</span>
+                    </button>
+                  ))}
+              </div>
             </div>
             <div className="space-y-4">
               {order.payments.length === 0 ? (
                 <div className="text-center py-6 text-slate-500 text-sm">Belum ada pembayaran tercatat.</div>
               ) : (
                 <div className="divide-y divide-[#E2E8F0]">
-                  {order.payments.map((pay) => (
+                  {visiblePayments.map((pay) => (
                     <div key={pay.id} className="py-3 flex items-center justify-between first:pt-0 last:pb-0">
                       <div>
                         <p className="text-sm font-semibold text-[#0F172A]">{formatIDR(pay.amount)}</p>
@@ -349,11 +352,24 @@ export default function OrderDetailView({
           </div>
 
           <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-sm space-y-6">
-            <h3 className="text-lg font-bold text-[#0F172A] border-b border-[#E2E8F0] pb-4">
-              Riwayat Status Pesanan
-            </h3>
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
+              <h3 className="text-lg font-bold text-[#0F172A]">
+                Riwayat Status Pesanan
+              </h3>
+              {order.status_history.length > HISTORY_PREVIEW && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllHistory((value) => !value)}
+                  className="text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline"
+                >
+                  {showAllHistory
+                    ? 'Lebih sedikit'
+                    : `Lihat semua (${order.status_history.length})`}
+                </button>
+              )}
+            </div>
             <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E2E8F0]">
-              {order.status_history.map((his, idx) => (
+              {visibleHistory.map((his, idx) => (
                 <div key={his.id || idx} className="relative flex items-start space-x-4">
                   <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-[#2563EB] ring-4 ring-white" />
                   <div>
@@ -436,23 +452,7 @@ export default function OrderDetailView({
               <div className="flex items-start space-x-3">
                 <Calendar className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-[#64748B] block">Deadline / Tenggat</span>
-                    {canEditOrder && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDeadlineValue(order.deadline);
-                          setShowDeadlineModal(true);
-                        }}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline"
-                        title="Ubah deadline"
-                      >
-                        <Pencil className="w-3 h-3" />
-                        Ubah
-                      </button>
-                    )}
-                  </div>
+                  <span className="text-xs text-[#64748B] block">Deadline / Tenggat</span>
                   <span className="font-semibold text-[#0F172A]">{order.deadline}</span>
                 </div>
               </div>
@@ -562,49 +562,6 @@ export default function OrderDetailView({
                   className="px-4 py-2 bg-[#2563EB] text-white rounded-xl text-sm font-semibold hover:bg-[#1D4ED8] disabled:opacity-60"
                 >
                   Simpan Pembayaran
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showDeadlineModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-5">
-            <h3 className="text-lg font-bold text-[#0F172A]">Ubah Deadline Pesanan</h3>
-            <form onSubmit={handleUpdateDeadline} className="space-y-4">
-              <p className="text-xs text-[#64748B] leading-relaxed">
-                Deadline saat ini: <strong className="text-[#0F172A]">{order.deadline}</strong>.
-                Gunakan ini jika pelanggan memberikan kelonggaran waktu.
-              </p>
-              <div>
-                <label className="block text-sm font-medium text-[#0F172A] mb-1">
-                  Tanggal Deadline Baru
-                </label>
-                <input
-                  type="date"
-                  name="deadline"
-                  required
-                  value={deadlineValue}
-                  onChange={(e) => setDeadlineValue(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
-                />
-              </div>
-              <div className="flex justify-end space-x-3 pt-4 border-t border-[#E2E8F0]">
-                <button
-                  type="button"
-                  onClick={() => setShowDeadlineModal(false)}
-                  className="px-4 py-2 border border-[#CBD5E1] text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="px-4 py-2 bg-[#2563EB] text-white rounded-xl text-sm font-semibold hover:bg-[#1D4ED8] disabled:opacity-60"
-                >
-                  Simpan Deadline
                 </button>
               </div>
             </form>
@@ -769,6 +726,19 @@ export default function OrderDetailView({
                       type="text"
                       required
                       defaultValue={order.customer_phone}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="edit-deadline" className="block text-xs font-medium text-[#0F172A] mb-1">
+                      Deadline / Tenggat
+                    </label>
+                    <input
+                      id="edit-deadline"
+                      name="deadline"
+                      type="date"
+                      required
+                      defaultValue={order.deadline}
                       className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
                     />
                   </div>

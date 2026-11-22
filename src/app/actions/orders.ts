@@ -226,51 +226,6 @@ export async function updateOrderStatusAction(formData: FormData): Promise<Actio
   }
 }
 
-export async function updateOrderDeadlineAction(
-  formData: FormData
-): Promise<ActionResult> {
-  try {
-    const user = await getSessionUser();
-    if (!user) return { ok: false, error: 'Sesi berakhir. Silakan masuk kembali.' };
-    if (!can(user, 'edit_orders')) {
-      return { ok: false, error: 'Anda tidak memiliki izin mengubah pesanan.' };
-    }
-
-    const orderId = text(formData, 'orderId');
-    const deadline = text(formData, 'deadline');
-    if (!orderId) return { ok: false, error: 'ID pesanan tidak ditemukan.' };
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
-      return { ok: false, error: 'Format tanggal deadline tidak valid.' };
-    }
-    if (Number.isNaN(new Date(`${deadline}T00:00:00`).getTime())) {
-      return { ok: false, error: 'Tanggal deadline tidak valid.' };
-    }
-
-    const admin = createAdminClient();
-    const { data: order } = await admin
-      .from('orders')
-      .select('id, deadline')
-      .eq('id', orderId)
-      .eq('business_id', user.businessId)
-      .maybeSingle();
-
-    if (!order) return { ok: false, error: 'Pesanan tidak ditemukan.' };
-    if (order.deadline === deadline) return { ok: true, data: undefined };
-
-    const { error } = await admin
-      .from('orders')
-      .update({ deadline, updated_at: new Date().toISOString() })
-      .eq('id', orderId)
-      .eq('business_id', user.businessId);
-    if (error) return { ok: false, error: error.message };
-
-    revalidateOrderPaths(orderId);
-    return { ok: true, data: undefined };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Gagal memperbarui deadline.' };
-  }
-}
-
 export async function updateOrderInfoAction(formData: FormData): Promise<ActionResult> {
   try {
     const user = await getSessionUser();
@@ -323,18 +278,32 @@ export async function updateOrderInfoAction(formData: FormData): Promise<ActionR
     } else if (scope === 'customer') {
       const name = text(formData, 'customerName');
       const phoneRaw = text(formData, 'customerPhone');
+      const deadline = text(formData, 'deadline');
 
       if (name.length < 2) return { ok: false, error: 'Nama pelanggan minimal 2 karakter.' };
       if (!isValidIndonesianPhone(phoneRaw)) {
         return { ok: false, error: 'Nomor WhatsApp tidak valid.' };
       }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
+        return { ok: false, error: 'Format tanggal deadline tidak valid.' };
+      }
+      if (Number.isNaN(new Date(`${deadline}T00:00:00`).getTime())) {
+        return { ok: false, error: 'Tanggal deadline tidak valid.' };
+      }
 
-      const { error } = await admin
+      const { error: customerError } = await admin
         .from('customers')
         .update({ name, phone: normalizePhone(phoneRaw) })
         .eq('id', order.customer_id)
         .eq('business_id', user.businessId);
-      if (error) return { ok: false, error: error.message };
+      if (customerError) return { ok: false, error: customerError.message };
+
+      const { error: deadlineError } = await admin
+        .from('orders')
+        .update({ deadline, updated_at: updatedAt })
+        .eq('id', orderId)
+        .eq('business_id', user.businessId);
+      if (deadlineError) return { ok: false, error: deadlineError.message };
     } else {
       return { ok: false, error: 'Jenis perubahan tidak valid.' };
     }
