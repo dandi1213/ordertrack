@@ -14,6 +14,8 @@ interface CurrencyInputProps {
   className?: string;
   required?: boolean;
   defaultValue?: string;
+  /** Batas nominal yang boleh diketik (misalnya sisa tagihan). */
+  maxAmount?: number;
 }
 
 /**
@@ -26,16 +28,23 @@ export default function CurrencyInput({
   className = '',
   required,
   defaultValue = '',
+  maxAmount,
 }: CurrencyInputProps) {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const caret = input.selectionStart ?? input.value.length;
     const digitsBeforeCaret = input.value.slice(0, caret).replace(/\D/g, '').length;
 
-    const raw = input.value
+    let raw = input.value
       .replace(/\D/g, '')
       .replace(/^0+(?=\d)/, '')
       .slice(0, 15);
+
+    // Batasi nominal agar tidak bisa melebihi sisa tagihan.
+    if (Number.isFinite(maxAmount) && (maxAmount ?? 0) > 0 && Number(raw) > (maxAmount ?? 0)) {
+      raw = String(Math.floor(maxAmount ?? 0));
+    }
+
     const formatted = formatCurrencyDisplay(raw);
 
     input.value = formatted;

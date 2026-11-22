@@ -59,6 +59,7 @@ export default function OrderDetailView({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
   const [paymentNotes, setPaymentNotes] = useState('');
+  const [paymentError, setPaymentError] = useState('');
 
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState<OrderStatus>(order.status);
@@ -93,15 +94,29 @@ export default function OrderDetailView({
 
   const handleAddPayment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setPaymentError('');
     const formData = new FormData(e.currentTarget);
+    const amount = Number(String(formData.get('amount') ?? '').replace(/\D/g, ''));
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setPaymentError('Nominal pembayaran harus lebih dari 0.');
+      return;
+    }
+    if (amount > remainingBalance) {
+      setPaymentError(`Nominal melebihi sisa tagihan. Maksimal ${formatIDR(remainingBalance)}.`);
+      return;
+    }
+
     startTransition(async () => {
       const result = await recordPaymentAction(formData);
       if (!result.ok) {
+        setPaymentError(result.error);
         notify(false, result.error);
         return;
       }
       setShowPaymentModal(false);
       setPaymentNotes('');
+      setPaymentError('');
       notify(true, 'Pembayaran berhasil dicatat.');
       router.refresh();
     });
@@ -207,7 +222,7 @@ export default function OrderDetailView({
 
       {toast && (
         <div
-          className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
+          className={`fixed top-20 right-4 z-[60] max-w-sm shadow-lg flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
             toast.ok
               ? 'border-green-200 bg-green-50 text-green-700'
               : 'border-red-200 bg-red-50 text-red-700'
@@ -256,15 +271,23 @@ export default function OrderDetailView({
                 <h3 className="text-lg font-bold text-[#0F172A]">Riwayat Pembayaran</h3>
                 <p className="text-xs text-[#64748B] mt-0.5">Catatan DP, cicilan, dan pelunasan</p>
               </div>
-              {canRecordPayment && (
-                <button
-                  onClick={() => setShowPaymentModal(true)}
-                  className="inline-flex items-center space-x-1.5 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] px-3.5 py-2 rounded-xl transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Tambah Pembayaran</span>
-                </button>
-              )}
+              {canRecordPayment &&
+                (isPaidFull ? (
+                  <span className="inline-flex items-center px-3.5 py-2 rounded-xl text-xs font-semibold text-green-700 bg-green-50 border border-green-200">
+                    Lunas — tidak bisa tambah pembayaran
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setPaymentError('');
+                      setShowPaymentModal(true);
+                    }}
+                    className="inline-flex items-center space-x-1.5 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] px-3.5 py-2 rounded-xl transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Pembayaran</span>
+                  </button>
+                ))}
             </div>
             <div className="space-y-4">
               {order.payments.length === 0 ? (
@@ -425,6 +448,11 @@ export default function OrderDetailView({
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-6">
             <h3 className="text-lg font-bold text-[#0F172A]">Catat Pembayaran Baru</h3>
+            <p className="text-xs text-[#64748B] -mt-3">
+              Sisa tagihan saat ini{' '}
+              <span className="font-semibold text-[#0F172A]">{formatIDR(remainingBalance)}</span>.
+              Nominal tidak boleh melebihi sisa tagihan.
+            </p>
             <form onSubmit={handleAddPayment} className="space-y-4">
               <input type="hidden" name="orderId" value={order.id} />
               <div>
@@ -432,9 +460,19 @@ export default function OrderDetailView({
                 <CurrencyInput
                   name="amount"
                   required
-                  placeholder="Contoh: 500.000"
+                  maxAmount={remainingBalance}
+                  placeholder={`Maksimal ${remainingBalance.toLocaleString('id-ID')}`}
                   className="w-full px-3 py-2 border border-[#CBD5E1] rounded-xl text-sm focus:ring-2 focus:ring-[#2563EB]"
                 />
+                {paymentError && (
+                  <p
+                    role="alert"
+                    className="mt-2 flex items-start gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    {paymentError}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#0F172A] mb-1">Metode Pembayaran</label>

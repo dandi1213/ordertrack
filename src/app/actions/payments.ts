@@ -44,7 +44,7 @@ export async function recordPaymentAction(formData: FormData): Promise<ActionRes
       const remaining = Math.max(totalPrice - totalPaid, 0);
       return {
         ok: false,
-        error: `Pembayaran melebihi sisa tagihan (${remaining.toLocaleString('id-ID')}).`,
+        error: `Nominal melebihi sisa tagihan. Maksimal ${remaining.toLocaleString('id-ID')}.`,
       };
     }
 
