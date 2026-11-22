@@ -32,13 +32,11 @@ export const WHATSAPP_TEMPLATES: Record<OrderStatus, { label: string; build: (p:
 
 Terima kasih telah melakukan pemesanan kepada kami.
 
-*PESANAN DITERIMA*
-
 Berikut detail pesanan Anda:
 
 • No. Pesanan: ${orderNumber}
 • Produk: ${product}
-• Status: Pesanan diterima
+• Status: *Pesanan diterima*
 
 Pesanan Anda telah berhasil kami terima dan akan segera masuk ke proses pengerjaan.
 
@@ -53,8 +51,6 @@ Terima kasih telah mempercayakan pesanan Anda kepada kami.`,
       `Halo ${customer},
 
 Kami ingin menginformasikan bahwa pesanan Anda saat ini sudah memasuki tahap pengerjaan.
-
-*PESANAN SEDANG DIKERJAKAN*
 
 Berikut detail pesanan Anda:
 
@@ -76,8 +72,6 @@ Terima kasih atas kepercayaan dan kesabaran Anda.`,
 
 Kami ingin menginformasikan bahwa pesanan Anda telah selesai diproses.
 
-*PESANAN SIAP*
-
 Berikut detail pesanan Anda:
 
 • No. Pesanan: ${orderNumber}
@@ -98,8 +92,6 @@ Terima kasih telah melakukan pemesanan kepada kami.`,
 
 Kami ingin menginformasikan bahwa pesanan Anda telah berhasil diselesaikan.
 
-*PESANAN SELESAI*
-
 Berikut detail pesanan Anda:
 
 • No. Pesanan: ${orderNumber}
@@ -119,8 +111,6 @@ Kami tunggu pesanan Anda berikutnya.`,
       `Halo ${customer},
 
 Kami ingin menginformasikan bahwa pesanan Anda telah dibatalkan.
-
-*PESANAN DIBATALKAN*
 
 Berikut detail pesanan Anda:
 
