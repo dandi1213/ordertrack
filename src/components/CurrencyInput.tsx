@@ -1,7 +1,5 @@
 'use client';
 
-import { useRef } from 'react';
-
 /** Mengubah angka mentah menjadi tampilan ribuan Indonesia, mis. 50000 -> 50.000. */
 export function formatCurrencyDisplay(raw: string): string {
   const digits = raw.replace(/\D/g, '');
@@ -10,7 +8,7 @@ export function formatCurrencyDisplay(raw: string): string {
 }
 
 interface CurrencyInputProps {
-  /** Nama field yang dikirim ke FormData (berisi angka mentah tanpa titik). */
+  /** Nama field yang dikirim ke FormData. Nilainya dikirim dalam format tampilan, lalu dinormalisasi di server. */
   name: string;
   placeholder?: string;
   className?: string;
@@ -20,7 +18,7 @@ interface CurrencyInputProps {
 
 /**
  * Input uang dengan format ribuan otomatis.
- * Input teks hanya untuk tampilan; nilai angka mentah dikirim lewat input hidden.
+ * Satu input saja yang dikirim, sehingga tidak ada sinkronisasi input hidden yang bisa hilang saat production.
  */
 export default function CurrencyInput({
   name,
@@ -29,8 +27,6 @@ export default function CurrencyInput({
   required,
   defaultValue = '',
 }: CurrencyInputProps) {
-  const hiddenRef = useRef<HTMLInputElement>(null);
-
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const caret = input.selectionStart ?? input.value.length;
@@ -43,7 +39,6 @@ export default function CurrencyInput({
     const formatted = formatCurrencyDisplay(raw);
 
     input.value = formatted;
-    if (hiddenRef.current) hiddenRef.current.value = raw;
 
     // Pertahankan posisi kursor relatif terhadap jumlah digit sebelum kursor.
     let position = 0;
@@ -56,24 +51,17 @@ export default function CurrencyInput({
   };
 
   return (
-    <>
-      <input
-        type="text"
-        inputMode="numeric"
-        autoComplete="off"
-        defaultValue={formatCurrencyDisplay(defaultValue)}
-        onChange={handleChange}
-        placeholder={placeholder}
-        required={required}
-        aria-label={name}
-        className={className}
-      />
-      <input
-        ref={hiddenRef}
-        type="hidden"
-        name={name}
-        defaultValue={defaultValue.replace(/\D/g, '')}
-      />
-    </>
+    <input
+      type="text"
+      name={name}
+      inputMode="numeric"
+      autoComplete="off"
+      defaultValue={formatCurrencyDisplay(defaultValue)}
+      onChange={handleChange}
+      placeholder={placeholder}
+      required={required}
+      aria-label={name}
+      className={className}
+    />
   );
 }

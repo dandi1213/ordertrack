@@ -16,7 +16,10 @@ export const text = (formData: FormData, key: string): string => {
 
 export const numberValue = (formData: FormData, key: string): number => {
   const raw = text(formData, key);
-  // Jika value datang dalam format ribuan Indonesia (50.000), normalisasi dulu.
+  // Input kosong harus dianggap tidak valid, bukan 0.
+  if (!raw) return NaN;
+
+  // Nilai dari CurrencyInput datang dalam format ribuan Indonesia (mis. 50.000).
   const normalized = /^\d{1,3}(\.\d{3})+([,.]\d+)?$/.test(raw)
     ? raw.replace(/\./g, '').replace(',', '.')
     : raw;
