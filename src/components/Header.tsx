@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Menu, Bell, Search, UserCircle, ChevronDown, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { logoutAction } from '@/app/actions/auth';
+import AutoRefresh from '@/components/AutoRefresh';
 import { SessionUser } from '@/types';
 
 interface HeaderProps {
@@ -28,6 +29,7 @@ export default function Header({ onMenuClick, user }: HeaderProps) {
           >
             <Menu className="w-5 h-5" />
           </button>
+          <AutoRefresh />
         </div>
 
         <div className="flex items-center space-x-2">

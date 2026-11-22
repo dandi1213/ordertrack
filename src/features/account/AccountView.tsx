@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useActionState } from 'react';
-import { AlertTriangle, CheckCircle2, Eye, EyeOff, Key, Loader2, Mail, User } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Eye, EyeOff, Key, Loader2, User } from 'lucide-react';
 import {
-  changeEmailAction,
   changePasswordAction,
   updateProfileNameAction,
   type AuthState,
@@ -37,10 +36,6 @@ export default function AccountView({ user }: { user: SessionUser }) {
     updateProfileNameAction,
     initialState
   );
-  const [emailState, emailAction, emailPending] = useActionState<AuthState, FormData>(
-    changeEmailAction,
-    initialState
-  );
   const [passwordState, passwordAction, passwordPending] = useActionState<AuthState, FormData>(
     changePasswordAction,
     initialState
@@ -54,7 +49,7 @@ export default function AccountView({ user }: { user: SessionUser }) {
       <div>
         <h2 className="text-2xl font-bold text-[#0F172A]">Akun Saya</h2>
         <p className="text-sm text-[#64748B] mt-1">
-          Kelola nama, email, dan kata sandi akun OrderTrack Anda.
+          Kelola nama dan kata sandi akun OrderTrack Anda. Email akun ditetapkan saat pendaftaran/undangan dan tidak bisa diubah di sini.
         </p>
       </div>
 
@@ -72,91 +67,39 @@ export default function AccountView({ user }: { user: SessionUser }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <form action={nameAction} className="p-5 border border-[#E2E8F0] rounded-xl space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center">
-                <User className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#0F172A] text-sm">Ubah Nama</h3>
-                <p className="text-[11px] text-[#64748B]">Nama yang tampil di aplikasi</p>
-              </div>
+        <form action={nameAction} className="p-5 border border-[#E2E8F0] rounded-xl space-y-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center">
+              <User className="w-4.5 h-4.5" />
             </div>
             <div>
-              <label htmlFor="account-name" className="block text-xs font-medium text-[#0F172A] mb-1.5">
-                Nama Lengkap
-              </label>
-              <input
-                id="account-name"
-                name="fullName"
-                type="text"
-                required
-                defaultValue={user.fullName}
-                className={inputClass}
-              />
+              <h3 className="font-semibold text-[#0F172A] text-sm">Ubah Nama</h3>
+              <p className="text-[11px] text-[#64748B]">Nama yang tampil di aplikasi</p>
             </div>
-            <Feedback state={nameState} />
-            <button
-              type="submit"
-              disabled={namePending}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-[#2563EB] text-white rounded-xl text-sm font-semibold hover:bg-[#1D4ED8] disabled:opacity-60"
-            >
-              {namePending && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>Simpan Nama</span>
-            </button>
-          </form>
-
-          <form action={emailAction} className="p-5 border border-[#E2E8F0] rounded-xl space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center">
-                <Mail className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#0F172A] text-sm">Ganti Email</h3>
-                <p className="text-[11px] text-[#64748B]">Alamat email untuk login</p>
-              </div>
-            </div>
-            <div>
-              <label htmlFor="account-email" className="block text-xs font-medium text-[#0F172A] mb-1.5">
-                Email Baru
-              </label>
-              <input
-                id="account-email"
-                name="newEmail"
-                type="email"
-                required
-                placeholder="nama@bisnisanda.com"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="account-email-password"
-                className="block text-xs font-medium text-[#0F172A] mb-1.5"
-              >
-                Konfirmasi Kata Sandi
-              </label>
-              <input
-                id="account-email-password"
-                name="password"
-                type="password"
-                required
-                placeholder="Masukkan kata sandi akun"
-                className={inputClass}
-              />
-            </div>
-            <Feedback state={emailState} />
-            <button
-              type="submit"
-              disabled={emailPending}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-white border border-[#CBD5E1] text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 disabled:opacity-60"
-            >
-              {emailPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>Simpan Email</span>
-            </button>
-          </form>
-        </div>
+          </div>
+          <div>
+            <label htmlFor="account-name" className="block text-xs font-medium text-[#0F172A] mb-1.5">
+              Nama Lengkap
+            </label>
+            <input
+              id="account-name"
+              name="fullName"
+              type="text"
+              required
+              defaultValue={user.fullName}
+              className={inputClass}
+            />
+          </div>
+          <Feedback state={nameState} />
+          <button
+            type="submit"
+            disabled={namePending}
+            className="inline-flex items-center space-x-2 px-4 py-2 bg-[#2563EB] text-white rounded-xl text-sm font-semibold hover:bg-[#1D4ED8] disabled:opacity-60"
+          >
+            {namePending && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>Simpan Nama</span>
+          </button>
+        </form>
 
         <form action={passwordAction} className="mt-6 p-5 border border-[#E2E8F0] rounded-xl space-y-4">
           <div className="flex items-center space-x-3">
