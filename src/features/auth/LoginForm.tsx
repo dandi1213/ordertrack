@@ -8,6 +8,8 @@ import { loginAction, type AuthState } from '@/app/actions/auth';
 const NOTICE: Record<string, string> = {
   email_changed: 'Email berhasil diperbarui. Silakan masuk dengan email baru Anda.',
   account_deleted: 'Akun berhasil dihapus.',
+  invite_expired:
+    'Sesi undangan berakhir. Minta owner mengirim ulang undangan, lalu buka tautan terbaru.',
 };
 
 export default function LoginForm({ notice, next }: { notice?: string; next?: string }) {

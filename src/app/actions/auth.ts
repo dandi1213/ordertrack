@@ -3,6 +3,7 @@
 import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getAppOrigin } from '@/lib/appOrigin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createServerSupabase } from '@/lib/supabase/server';
 import { isEmail, text, validateRegistration } from '@/lib/validation';
@@ -35,6 +36,15 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
     if (message.includes('rate limit')) {
       return { error: 'Terlalu banyak percobaan. Coba lagi beberapa saat.' };
     }
+
+    // Staf yang baru diundang belum punya kata sandi sampai tautan undangan diklik.
+    if (message.includes('invalid login credentials')) {
+      return {
+        error:
+          'Email atau kata sandi salah. Jika akun Anda baru diundang, buka email undangan untuk membuat kata sandi.',
+      };
+    }
+
     return { error: 'Email atau kata sandi salah. Periksa kembali kredensial Anda.' };
   }
 
@@ -54,48 +64,48 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   const password = text(formData, 'password');
 
   const admin = createAdminClient();
+  const origin = await getAppOrigin();
+  const supabase = await createServerSupabase();
 
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
+  // Pakai signUp (bukan createUser dengan email_confirm: true) agar Supabase
+  // mengirim email konfirmasi. Email yang salah/fake tidak bisa langsung masuk.
+  const { data, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
-    email_confirm: true,
-    user_metadata: { full_name: fullName },
+    options: {
+      emailRedirectTo: `${origin}/auth/callback`,
+      data: { full_name: fullName },
+    },
   });
 
-  let userId = created.user?.id;
-
-  if (createError || !userId) {
-    if (!createError?.message.toLowerCase().includes('already')) {
-      return { error: createError?.message ?? 'Gagal membuat akun.' };
-    }
-
-    // Pendaftaran sebelumnya bisa gagal di tengah jalan (misalnya GRANT belum ada).
-    // Pulihkan akun yatim hanya jika kredensial cocok dan belum memiliki bisnis.
-    const signInClient = await createServerSupabase();
-    const { data: signed, error: signInError } = await signInClient.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (signInError || !signed.user) {
+  if (signUpError) {
+    const message = signUpError.message.toLowerCase();
+    if (message.includes('already') || message.includes('registered')) {
       return { error: 'Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.' };
     }
+    return { error: signUpError.message };
+  }
 
-    const { data: existingMembership } = await admin
-      .from('business_members')
-      .select('id')
-      .eq('user_id', signed.user.id)
-      .eq('is_active', true)
-      .maybeSingle();
+  // Untuk email yang sudah terdaftar, Supabase mengembalikan user dengan identities kosong.
+  if (data.user?.identities && data.user.identities.length === 0) {
+    return { error: 'Email ini sudah terdaftar. Silakan masuk atau cek email konfirmasi Anda.' };
+  }
 
-    if (existingMembership) {
-      return { error: 'Email ini sudah terdaftar. Silakan masuk.' };
-    }
+  const userId = data.user?.id;
+  if (!userId) return { error: 'Gagal membuat akun. Silakan coba lagi.' };
 
-    userId = signed.user.id;
+  // Jika "Confirm email" nonaktif, signUp langsung memberi session dan tidak ada email dikirim.
+  // Akun yang baru dibuat dihapus supaya tidak ada akun yatim yang tidak bisa diverifikasi.
+  if (data.session) {
+    await supabase.auth.signOut();
+    await admin.auth.admin.deleteUser(userId);
+    return {
+      error:
+        'Konfirmasi email belum aktif di Supabase. Aktifkan Email confirmation di Authentication → Providers → Email, lalu daftar lagi.',
+    };
   }
 
   // Trigger handle_new_user sudah membuat profile saat akun dibuat.
-  // Cek dulu agar tidak memerlukan hak INSERT bila baris sudah ada.
   const { data: existingProfile } = await admin
     .from('profiles')
     .select('id')
@@ -143,14 +153,9 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
     return { error: `Gagal membuat keanggotaan bisnis: ${memberError.message}` };
   }
 
-  const supabase = await createServerSupabase();
-  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-  if (signInError) {
-    return { error: 'Akun dibuat, tetapi gagal masuk otomatis. Silakan coba masuk.' };
-  }
-
-  revalidatePath('/', 'layout');
-  redirect('/dashboard');
+  return {
+    success: `Akun berhasil dibuat. Kami mengirim email konfirmasi ke ${email}. Klik tautan di email tersebut untuk mengaktifkan akun dan masuk ke dashboard.`,
+  };
 }
 
 export async function logoutAction(): Promise<void> {
@@ -158,6 +163,32 @@ export async function logoutAction(): Promise<void> {
   await supabase.auth.signOut();
   revalidatePath('/', 'layout');
   redirect('/login');
+}
+
+export async function setInitialPasswordAction(
+  _prev: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const password = text(formData, 'password');
+  const confirmPassword = text(formData, 'confirmPassword');
+
+  if (password.length < 8) return { error: 'Kata sandi minimal 8 karakter.' };
+  if (password !== confirmPassword) return { error: 'Konfirmasi kata sandi tidak cocok.' };
+
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: 'Sesi berakhir. Minta owner mengirim ulang undangan.' };
+
+  const { error } = await supabase.auth.updateUser({
+    password,
+    data: { must_set_password: false },
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath('/', 'layout');
+  redirect('/dashboard');
 }
 
 export async function changePasswordAction(_prev: AuthState, formData: FormData): Promise<AuthState> {

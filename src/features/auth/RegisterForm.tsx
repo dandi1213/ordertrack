@@ -58,17 +58,46 @@ export default function RegisterForm() {
             </p>
           </div>
 
-          {state.error && (
-            <div
-              role="alert"
-              className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700"
-            >
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{state.error}</span>
+          {state.success ? (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-green-200 bg-green-50 p-5 space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-white text-green-600 flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-green-900">Cek Email Anda</h3>
+                    <p className="text-xs text-green-800 mt-0.5">
+                      Konfirmasi diperlukan sebelum akun bisa digunakan.
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-green-800 leading-relaxed">{state.success}</p>
+                <p className="text-[11px] text-green-700">
+                  Tidak menerima email? Periksa folder Spam/Promosi, lalu daftar lagi dengan email
+                  yang sama jika perlu mengirim ulang.
+                </p>
+              </div>
+              <Link
+                href="/login"
+                className="block w-full h-11 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold rounded-lg flex items-center justify-center"
+              >
+                Ke Halaman Masuk
+              </Link>
             </div>
-          )}
+          ) : (
+            <>
+              {state.error && (
+                <div
+                  role="alert"
+                  className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700"
+                >
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{state.error}</span>
+                </div>
+              )}
 
-          <form action={formAction} className="space-y-4" noValidate>
+              <form action={formAction} className="space-y-4" noValidate>
             <div>
               <label htmlFor="reg-fullname" className="block text-[13px] font-medium text-[#0F172A] mb-1.5">
                 Nama Lengkap Penanggung Jawab
@@ -221,7 +250,9 @@ export default function RegisterForm() {
                 )}
               </button>
             </div>
-          </form>
+              </form>
+            </>
+          )}
 
           <div className="pt-4 text-center">
             <p className="text-sm text-[#64748B]">
