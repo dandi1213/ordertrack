@@ -11,6 +11,7 @@ import { registerAction, type AuthState } from '@/app/actions/auth';
 export default function RegisterForm() {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(registerAction, {});
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [terms, setTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -210,6 +211,27 @@ export default function RegisterForm() {
                 </span>
               </div>
               {errorFor('password') && <p className="text-xs text-red-600 mt-1">{errorFor('password')}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="reg-confirm-password" className="block text-[13px] font-medium text-[#0F172A] mb-1.5">
+                Ulangi Kata Sandi
+              </label>
+              <div className="relative flex items-center">
+                <Lock className="absolute left-3 w-4.5 h-4.5 text-slate-400 pointer-events-none" />
+                <input
+                  id="reg-confirm-password"
+                  name="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Masukkan ulang kata sandi"
+                  className={inputClass(Boolean(errorFor('confirmPassword')))}
+                />
+              </div>
+              {errorFor('confirmPassword') && (
+                <p className="text-xs text-red-600 mt-1">{errorFor('confirmPassword')}</p>
+              )}
             </div>
 
             <div className="pt-1">

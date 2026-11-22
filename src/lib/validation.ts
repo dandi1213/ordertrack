@@ -34,12 +34,14 @@ export const validateRegistration = (formData: FormData): FieldErrors => {
   const phone = text(formData, 'phone');
   const email = text(formData, 'email');
   const password = text(formData, 'password');
+  const confirmPassword = text(formData, 'confirmPassword');
 
   if (fullName.length < 3) errors.fullName = 'Nama lengkap minimal 3 karakter.';
   if (businessName.length < 3) errors.businessName = 'Nama bisnis minimal 3 karakter.';
   if (!isValidIndonesianPhone(phone)) errors.phone = 'Nomor WhatsApp tidak valid (contoh: 81234567890).';
   if (!isEmail(email)) errors.email = 'Format email tidak valid.';
   if (password.length < 8) errors.password = 'Kata sandi minimal 8 karakter.';
+  if (confirmPassword !== password) errors.confirmPassword = 'Konfirmasi kata sandi tidak cocok.';
   if (formData.get('terms') !== 'on' && formData.get('terms') !== 'true') {
     errors.terms = 'Anda harus menyetujui Ketentuan Layanan.';
   }

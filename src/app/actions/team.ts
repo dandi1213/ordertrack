@@ -135,6 +135,47 @@ export async function resendStaffInviteAction(formData: FormData): Promise<Actio
   }
 }
 
+export async function deleteStaffAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const user = await getSessionUser();
+    if (!user) return { ok: false, error: 'Sesi berakhir. Silakan masuk kembali.' };
+    if (!can(user, 'manage_staff')) {
+      return { ok: false, error: 'Anda tidak memiliki izin mengelola staf.' };
+    }
+
+    const memberId = text(formData, 'memberId');
+    if (!memberId) return { ok: false, error: 'Staf tidak ditemukan.' };
+
+    const admin = createAdminClient();
+    const { data: member } = await admin
+      .from('business_members')
+      .select('id, role, user_id')
+      .eq('id', memberId)
+      .eq('business_id', user.businessId)
+      .maybeSingle();
+
+    if (!member) return { ok: false, error: 'Staf tidak ditemukan pada bisnis ini.' };
+    if (member.role !== 'staff') return { ok: false, error: 'Owner tidak dapat dihapus.' };
+    if (member.user_id === user.id) return { ok: false, error: 'Anda tidak dapat menghapus akun sendiri.' };
+
+    const { error: memberError } = await admin
+      .from('business_members')
+      .delete()
+      .eq('id', memberId)
+      .eq('business_id', user.businessId);
+
+    if (memberError) return { ok: false, error: memberError.message };
+
+    const { error: authError } = await admin.auth.admin.deleteUser(member.user_id);
+    if (authError) return { ok: false, error: authError.message };
+
+    revalidatePath('/team');
+    return { ok: true, data: undefined };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : 'Gagal menghapus staf.' };
+  }
+}
+
 export async function updateStaffPermissionsAction(formData: FormData): Promise<ActionResult> {
   try {
     const user = await getSessionUser();

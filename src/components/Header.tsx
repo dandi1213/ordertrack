@@ -14,6 +14,8 @@ interface HeaderProps {
 export default function Header({ onMenuClick, user }: HeaderProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const canManageSettings =
+    user.role === 'owner' || user.permissions?.manage_business_settings === true;
 
   return (
     <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-20 h-16">
@@ -78,12 +80,21 @@ export default function Header({ onMenuClick, user }: HeaderProps) {
                   <p className="text-xs text-slate-400 break-all">{user.email}</p>
                 </div>
                 <Link
-                  href="/settings"
+                  href="/account"
                   onClick={() => setShowProfileMenu(false)}
                   className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
                 >
-                  Pengaturan Akun
+                  Akun Saya
                 </Link>
+                {canManageSettings && (
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    Pengaturan Bisnis
+                  </Link>
+                )}
                 <hr className="my-2 border-[#E2E8F0]" />
                 <form action={logoutAction}>
                   <button

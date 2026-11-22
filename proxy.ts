@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 const PROTECTED_PREFIXES = ['/dashboard', '/orders', '/payments', '/team', '/settings'];
 const AUTH_ROUTES = ['/login', '/register'];
@@ -32,6 +33,25 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+
+  // Akun yang kehilangan keanggotaan aktif (misalnya bisnisnya dihapus owner)
+  // tidak boleh terjebak loop dashboard -> login.
+  if (user) {
+    const admin = createAdminClient();
+    const { data: membership } = await admin
+      .from('business_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!membership && path !== '/auth/logout' && !path.startsWith('/auth/')) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/logout';
+      url.search = '?notice=no_membership';
+      return NextResponse.redirect(url);
+    }
+  }
 
   if (!user && PROTECTED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
     const url = request.nextUrl.clone();

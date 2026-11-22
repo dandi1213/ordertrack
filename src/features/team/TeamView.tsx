@@ -12,8 +12,10 @@ import {
   Loader2,
   AlertTriangle,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import {
+  deleteStaffAction,
   inviteStaffAction,
   resendStaffInviteAction,
   toggleStaffActiveAction,
@@ -60,6 +62,7 @@ export default function TeamView({ staff }: { staff: StaffMember[] }) {
 
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [draftPermissions, setDraftPermissions] = useState<StaffMember['permissions'] | null>(null);
+  const [deletingStaff, setDeletingStaff] = useState<StaffMember | null>(null);
 
   const notify = (ok: boolean, message: string) => {
     setToast({ ok, message });
@@ -137,6 +140,23 @@ export default function TeamView({ staff }: { staff: StaffMember[] }) {
         return;
       }
       notify(true, `Undangan dikirim ulang ke ${member.email}.`);
+    });
+  };
+
+  const confirmDeleteStaff = () => {
+    if (!deletingStaff) return;
+    const formData = new FormData();
+    formData.set('memberId', deletingStaff.id);
+    const target = deletingStaff;
+    setDeletingStaff(null);
+    startTransition(async () => {
+      const result = await deleteStaffAction(formData);
+      if (!result.ok) {
+        notify(false, result.error);
+        return;
+      }
+      notify(true, `Staf ${target.full_name} berhasil dihapus.`);
+      router.refresh();
     });
   };
 
@@ -327,6 +347,16 @@ export default function TeamView({ staff }: { staff: StaffMember[] }) {
                         >
                           {staffMember.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                         </button>
+                        {staffMember.role === 'staff' && (
+                          <button
+                            onClick={() => setDeletingStaff(staffMember)}
+                            disabled={isPending}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-60"
+                            title="Hapus staf"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -460,6 +490,46 @@ export default function TeamView({ staff }: { staff: StaffMember[] }) {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deletingStaff && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[#0F172A]">Hapus Staf?</h3>
+                <p className="text-xs text-[#64748B] mt-1">
+                  Tindakan ini tidak bisa dibatalkan.
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-[#64748B] leading-relaxed">
+              Staf <span className="font-semibold text-[#0F172A]">{deletingStaff.full_name}</span>{' '}
+              ({deletingStaff.email}) akan kehilangan akses dan tidak bisa lagi masuk ke OrderTrack.
+            </p>
+            <div className="flex justify-end space-x-3 pt-2 border-t border-[#E2E8F0]">
+              <button
+                type="button"
+                onClick={() => setDeletingStaff(null)}
+                className="px-4 py-2 border border-[#CBD5E1] text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteStaff}
+                disabled={isPending}
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 disabled:opacity-60"
+              >
+                {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Ya, Hapus Staf</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

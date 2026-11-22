@@ -10,6 +10,8 @@ const NOTICE: Record<string, string> = {
   account_deleted: 'Akun berhasil dihapus.',
   invite_expired:
     'Sesi undangan berakhir. Minta owner mengirim ulang undangan, lalu buka tautan terbaru.',
+  no_membership:
+    'Akun ini tidak lagi terhubung ke bisnis aktif. Silakan daftar bisnis baru atau hubungi owner.',
 };
 
 export default function LoginForm({ notice, next }: { notice?: string; next?: string }) {

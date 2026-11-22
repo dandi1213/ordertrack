@@ -26,7 +26,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
   if (password.length < 8) return { error: 'Kata sandi minimal 8 karakter.' };
 
   const supabase = await createServerSupabase();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data: signedIn, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     const message = error.message.toLowerCase();
@@ -46,6 +46,22 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
     }
 
     return { error: 'Email atau kata sandi salah. Periksa kembali kredensial Anda.' };
+  }
+
+  // Akun yang bisnisnya sudah dihapus tidak boleh masuk ke dashboard kosong.
+  const admin = createAdminClient();
+  const { data: membership } = await admin
+    .from('business_members')
+    .select('id')
+    .eq('user_id', signedIn.user.id)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (!membership) {
+    await supabase.auth.signOut();
+    return {
+      error: 'Akun ini tidak terhubung ke bisnis aktif. Silakan daftar bisnis baru atau hubungi owner.',
+    };
   }
 
   revalidatePath('/', 'layout');
@@ -191,6 +207,35 @@ export async function setInitialPasswordAction(
   redirect('/dashboard');
 }
 
+export async function updateProfileNameAction(
+  _prev: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const fullName = text(formData, 'fullName');
+  if (fullName.length < 3) return { error: 'Nama lengkap minimal 3 karakter.' };
+
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: 'Sesi berakhir. Silakan masuk kembali.' };
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('profiles')
+    .update({ full_name: fullName })
+    .eq('id', user.id);
+  if (error) return { error: error.message };
+
+  // Samakan metadata auth untuk konsistensi (abaikan kegagalan non-kritis).
+  await admin.auth.admin.updateUserById(user.id, {
+    user_metadata: { ...user.user_metadata, full_name: fullName },
+  });
+
+  revalidatePath('/', 'layout');
+  return { success: 'Nama berhasil diperbarui.' };
+}
+
 export async function changePasswordAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const currentPassword = text(formData, 'currentPassword');
   const newPassword = text(formData, 'newPassword');
@@ -281,8 +326,24 @@ export async function deleteAccountAction(_prev: AuthState, formData: FormData):
     .maybeSingle();
 
   if (membership?.role === 'owner') {
-    // Hapus bisnisowner; cascade menghapus orders, payments, history, dll.
+    // Kumpulkan semua staf sebelum bisnis dihapus, karena cascade akan menghapus
+    // baris business_members yang dipakai untuk mencari mereka.
+    const { data: staffMembers } = await admin
+      .from('business_members')
+      .select('user_id')
+      .eq('business_id', membership.business_id);
+
+    const staffUserIds = (staffMembers ?? [])
+      .map((member) => member.user_id)
+      .filter((id) => id && id !== user.id);
+
+    // Hapus bisnis owner; cascade menghapus orders, payments, history, dll.
     await admin.from('businesses').delete().eq('id', membership.business_id);
+
+    // Akun staf juga harus ikut terhapus supaya tidak bisa login ke dashboard kosong.
+    for (const staffUserId of staffUserIds) {
+      await admin.auth.admin.deleteUser(staffUserId);
+    }
   } else if (membership) {
     await admin.from('business_members').delete().eq('id', membership.id);
   }
