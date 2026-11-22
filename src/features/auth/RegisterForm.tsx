@@ -36,7 +36,7 @@ export default function RegisterForm() {
   const errorFor = (key: string) => state.fields?.[key];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center py-10 px-4 sm:py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="w-14 h-14 rounded-2xl bg-[#2563EB] flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
@@ -50,7 +50,7 @@ export default function RegisterForm() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-sm border border-[#E2E8F0] sm:rounded-xl sm:px-8">
+        <div className="bg-white py-8 px-5 shadow-sm border border-[#E2E8F0] rounded-xl sm:px-8">
           <div className="space-y-1 mb-5">
             <h2 className="text-lg font-semibold text-[#0F172A] tracking-tight">Mulai Uji Coba OrderTrack</h2>
             <p className="text-sm text-[#64748B]">
