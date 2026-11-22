@@ -27,7 +27,7 @@ import {
 } from '@/app/actions/orders';
 import { recordPaymentAction } from '@/app/actions/payments';
 import { formatIDR, getStatusLabel, getStatusBadgeClass } from '@/lib/utils';
-import { ORDER_STATUSES, PAYMENT_METHODS } from '@/lib/constants';
+import { ALL_ORDER_STATUSES, PAYMENT_METHODS } from '@/lib/constants';
 import { Order, OrderStatus } from '@/types';
 
 const STATUS_HINTS: Record<OrderStatus, string> = {
@@ -35,6 +35,7 @@ const STATUS_HINTS: Record<OrderStatus, string> = {
   in_progress: 'Sedang dikerjakan',
   ready: 'Siap diambil / dikirim',
   completed: 'Selesai dan tercatat',
+  cancelled: 'Pesanan dibatalkan',
 };
 
 const HISTORY_PREVIEW = 5;
@@ -581,7 +582,7 @@ export default function OrderDetailView({
                   name="status"
                   value={newStatus}
                   onValueChange={(value) => setNewStatus(value as OrderStatus)}
-                  options={ORDER_STATUSES.map((status) => {
+                  options={ALL_ORDER_STATUSES.map((status) => {
                     const locked = status === 'completed' && !isPaidFull;
                     return {
                       value: status,

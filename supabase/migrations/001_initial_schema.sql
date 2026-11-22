@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS orders (
     notes TEXT,
     total_price NUMERIC(14,2) NOT NULL CHECK (total_price >= 0),
     deadline DATE NOT NULL,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('received', 'in_progress', 'ready', 'completed')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('received', 'in_progress', 'ready', 'completed', 'cancelled')),
     tracking_token_hash TEXT NOT NULL,
     created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,

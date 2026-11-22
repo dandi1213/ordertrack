@@ -13,7 +13,7 @@ import {
   text,
   validateOrder,
 } from '@/lib/validation';
-import { WHATSAPP_TEMPLATES } from '@/lib/constants';
+import { ALL_ORDER_STATUSES, WHATSAPP_TEMPLATES } from '@/lib/constants';
 import { formatIDR } from '@/lib/utils';
 import { ActionResult, OrderStatus } from '@/types';
 
@@ -168,7 +168,7 @@ export async function updateOrderStatusAction(formData: FormData): Promise<Actio
     const orderId = text(formData, 'orderId');
     const status = text(formData, 'status') as OrderStatus;
     if (!orderId) return { ok: false, error: 'ID pesanan tidak ditemukan.' };
-    if (!['received', 'in_progress', 'ready', 'completed'].includes(status)) {
+    if (!ALL_ORDER_STATUSES.includes(status)) {
       return { ok: false, error: 'Status tidak valid.' };
     }
 

@@ -27,6 +27,8 @@ export const getStatusLabel = (status: OrderStatus): string => {
       return 'Siap Diambil/Dikirim';
     case 'completed':
       return 'Selesai';
+    case 'cancelled':
+      return 'Dibatalkan';
     default:
       return status;
   }
@@ -42,6 +44,8 @@ export const getStatusBadgeClass = (status: OrderStatus): string => {
       return 'bg-green-50 text-green-700 border border-green-200';
     case 'completed':
       return 'bg-slate-100 text-slate-700 border border-slate-200';
+    case 'cancelled':
+      return 'bg-red-50 text-red-700 border border-red-200';
     default:
       return 'bg-slate-100 text-slate-700 border border-slate-200';
   }
@@ -63,7 +67,7 @@ export const isOverdue = (
   status: OrderStatus,
   today: Date,
 ): boolean => {
-  if (status === 'completed' || status === 'ready') return false;
+  if (status === 'completed' || status === 'cancelled' || status === 'ready') return false;
 
   const dueDate = parseLocalDate(deadline);
   if (!dueDate) return false;

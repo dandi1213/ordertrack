@@ -143,6 +143,7 @@ export default function OrdersList({ orders, canCreate }: OrdersListProps) {
             { label: 'Dikerjakan', value: 'in_progress' },
             { label: 'Siap', value: 'ready' },
             { label: 'Selesai', value: 'completed' },
+            { label: 'Dibatalkan', value: 'cancelled' },
           ].map((tab) => (
             <button
               key={tab.value}

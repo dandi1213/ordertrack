@@ -115,33 +115,42 @@ export default function TrackingView({ info }: { info: PublicOrderInfo }) {
 
           <div className="space-y-4 pt-4 border-t border-[#E2E8F0]">
             <h3 className="font-bold text-sm text-[#0F172A]">Progres Pengerjaan</h3>
-            <div className="grid grid-cols-4 gap-2">
-              {ORDER_STATUSES.map((status, index) => {
-                const reached = currentIndex >= index;
-                return (
-                  <div key={status} className="text-center space-y-2">
-                    <div
-                      className={`mx-auto w-8 h-8 rounded-full flex items-center justify-center ${
-                        reached ? 'bg-[#2563EB] text-white' : 'bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      {index < currentIndex ? (
-                        <CheckCircle2 className="w-4 h-4" />
-                      ) : (
-                        <span className="text-xs font-bold">{index + 1}</span>
-                      )}
+            {info.status === 'cancelled' ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-center">
+                <p className="text-sm font-bold text-red-700">Pesanan ini telah dibatalkan.</p>
+                <p className="mt-1 text-xs text-red-600">
+                  Jika ada pertanyaan, silakan hubungi {info.business_name}.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {ORDER_STATUSES.map((status, index) => {
+                  const reached = currentIndex >= index;
+                  return (
+                    <div key={status} className="text-center space-y-2">
+                      <div
+                        className={`mx-auto w-8 h-8 rounded-full flex items-center justify-center ${
+                          reached ? 'bg-[#2563EB] text-white' : 'bg-slate-100 text-slate-400'
+                        }`}
+                      >
+                        {index < currentIndex ? (
+                          <CheckCircle2 className="w-4 h-4" />
+                        ) : (
+                          <span className="text-xs font-bold">{index + 1}</span>
+                        )}
+                      </div>
+                      <p
+                        className={`text-[10px] font-semibold leading-tight ${
+                          reached ? 'text-[#2563EB]' : 'text-slate-400'
+                        }`}
+                      >
+                        {getStatusLabel(status)}
+                      </p>
                     </div>
-                    <p
-                      className={`text-[10px] font-semibold leading-tight ${
-                        reached ? 'text-[#2563EB]' : 'text-slate-400'
-                      }`}
-                    >
-                      {getStatusLabel(status)}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

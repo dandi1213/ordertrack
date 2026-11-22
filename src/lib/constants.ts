@@ -1,6 +1,16 @@
 import { OrderStatus } from '@/types';
 
+/** Urutan progres pengerjaan (dipakai stepper tracking). */
 export const ORDER_STATUSES: OrderStatus[] = ['received', 'in_progress', 'ready', 'completed'];
+
+/** Semua status yang bisa dipilih, termasuk pembatalan. */
+export const ALL_ORDER_STATUSES: OrderStatus[] = [
+  'received',
+  'in_progress',
+  'ready',
+  'completed',
+  'cancelled',
+];
 
 export const PAYMENT_METHODS: string[] = ['Transfer', 'QRIS', 'Tunai / Cash'];
 
@@ -53,5 +63,10 @@ export const WHATSAPP_TEMPLATES: Record<
     label: 'Pesanan selesai',
     build: ({ customer, product, orderNumber, trackingUrl }) =>
       `Halo ${customer}, pesanan Anda ${orderNumber} (${product}) telah selesai. Terima kasih! Riwayat: ${trackingUrl}`,
+  },
+  cancelled: {
+    label: 'Pesanan dibatalkan',
+    build: ({ customer, product, orderNumber }) =>
+      `Halo ${customer}, pesanan Anda ${orderNumber} (${product}) telah dibatalkan. Jika ada pertanyaan, silakan hubungi kami. Terima kasih.`,
   },
 };

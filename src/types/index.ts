@@ -1,4 +1,4 @@
-export type OrderStatus = 'received' | 'in_progress' | 'ready' | 'completed';
+export type OrderStatus = 'received' | 'in_progress' | 'ready' | 'completed' | 'cancelled';
 
 export type Permission =
   | 'view_dashboard'
